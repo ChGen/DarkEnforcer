@@ -155,8 +155,12 @@ LRESULT CALLBACK DarkDialogSubProc(HWND hDlg, UINT message, WPARAM wParam, LPARA
     GetWindowText(hDlg, buf, 256);
     switch (message)
     {
+    case WM_INITDIALOG:
+    {
+
+    }
+        break;
     case WM_CTLCOLORDLG:
-        dbgLog(L"WM_CTLCOLORDLG SUBC");
     case WM_CTLCOLORSCROLLBAR:
     case WM_CTLCOLORLISTBOX:
     case WM_CTLCOLOREDIT:
@@ -165,7 +169,6 @@ LRESULT CALLBACK DarkDialogSubProc(HWND hDlg, UINT message, WPARAM wParam, LPARA
     {
         if (g_isDarkModeSupported && g_isDarkModeEnabled)
         {
-            dbgLog(L"WM_CTLCO* SUBC");
             COLORREF darkTextColor = RGB(255, 255, 255);
             COLORREF darkBkColor = RGB(1, 1, 1);
             HDC hdc = reinterpret_cast<HDC>(wParam);
@@ -188,6 +191,7 @@ LRESULT CALLBACK DarkDialogSubProc(HWND hDlg, UINT message, WPARAM wParam, LPARA
     return data.origProc(hDlg, message, wParam, lParam);
 }
 
+
 PAYLOADAPI LRESULT CALLBACK DarkHookProc(INT code, WPARAM wParam, LPARAM lParam)
 {
     LRESULT nRet = 0;
@@ -206,11 +210,53 @@ PAYLOADAPI LRESULT CALLBACK DarkHookProc(INT code, WPARAM wParam, LPARAM lParam)
                 else if(!g_isDarkModeInited)
                 {
                     g_isDarkModeSupported = false;
-                    g_isDarkModeInited = false;
+                    g_isDarkModeInited = true;
                 }
                 break;
+            case WM_DRAWITEM:
+
+            if (g_isDarkModeSupported)
+            {
+                DRAWITEMSTRUCT* draw = (DRAWITEMSTRUCT*)lParam;
+                TCHAR buf[256], text[256];
+                RealGetWindowClass(draw->hwndItem, buf, 256);
+                GetWindowText(draw->hwndItem, text, 256);
+                dbgLog(_T("WM_DRAWITEM:"));
+                dbgLog(buf);
+                dbgLog(text);
+                //if (draw /*&& _tcscmp(buf, _T("Button")) == 0*/) //SysTabControl32
+                {
+                    RECT rect;
+                    GetClientRect(draw->hwndItem, &rect);
+                    FillRect(draw->hDC, &rect, (HBRUSH)GetStockObject(BLACK_BRUSH));
+                    FillRect(draw->hDC, &draw->rcItem, (HBRUSH)GetStockObject(BLACK_BRUSH));
+                    rect.left = 0; rect.top = 0; rect.bottom = 111; rect.right = 111;
+                }
+            }
+                break;
             case WM_CREATE:
+
+            if (g_isDarkModeSupported)
+            {
+                //ComboBox; SysListView32; SysTabControl32
+                TCHAR claz[256], text[256];
+                RealGetWindowClass(msg->hwnd, claz, 256);
+                
+                if (_tcscmp(claz, _T("Button")) == 0)
+                {
+                    LONG_PTR style = GetWindowLongPtr(msg->hwnd, GWL_STYLE);
+                    SetWindowLongPtr(msg->hwnd, GWL_STYLE, style| BS_HATCHED);
+                }
+                else if (_tcscmp(claz, _T("SysTabControl32")) == 0)
+                {
+                    dbgLog(_T("Found SysTabControl32:"));
+                    GetWindowText(msg->hwnd, text, 256);
+                    dbgLog(text);
+                    LONG_PTR style = GetWindowLongPtr(msg->hwnd, GWL_STYLE);
+                    SetWindowLongPtr(msg->hwnd, GWL_STYLE, style | TCS_OWNERDRAWFIXED);
+                }
                 InitDarkModeForWindow(msg->hwnd);
+            }
                 break;
             case WM_INITDIALOG:
             {
@@ -227,6 +273,28 @@ PAYLOADAPI LRESULT CALLBACK DarkHookProc(INT code, WPARAM wParam, LPARAM lParam)
                     RefreshTitleBarThemeColor(hWnd);
                     EnableThemeDialogTexture(hWnd, ETDT_DISABLE);
                     SendMessageW(hWnd, WM_THEMECHANGED, 0, 0);
+
+
+
+                    //ComboBox; SysListView32; SysTabControl32
+                    TCHAR claz[256], text[256];
+                    RealGetWindowClass(msg->hwnd, claz, 256);
+
+                    if (_tcscmp(claz, _T("Button")) == 0)
+                    {
+                        LONG_PTR style = GetWindowLongPtr(msg->hwnd, GWL_STYLE);
+                        SetWindowLongPtr(msg->hwnd, GWL_STYLE, style | BS_HATCHED);
+                    }
+                    else if (_tcscmp(claz, _T("SysTabControl32")) == 0)
+                    {
+                        dbgLog(_T("Found in initdialog SysTabControl32:"));
+                        GetWindowText(msg->hwnd, text, 256);
+                        dbgLog(text);
+                        LONG_PTR style = GetWindowLongPtr(msg->hwnd, GWL_STYLE);
+                        SetWindowLongPtr(msg->hwnd, GWL_STYLE, style | TCS_OWNERDRAWFIXED);
+                    }
+
+
                 }
                 if (GetAncestor(msg->hwnd, GA_ROOT) == msg->hwnd)
                 {
@@ -234,7 +302,10 @@ PAYLOADAPI LRESULT CALLBACK DarkHookProc(INT code, WPARAM wParam, LPARAM lParam)
                     SubData data;
                     data.origProc = (WNDPROC)SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)&DarkDialogSubProc);
                     g_subData[hWnd] = data;
+
+
                 }
+
                 break;// return (INT_PTR)TRUE;
             }
 
@@ -276,7 +347,6 @@ PAYLOADAPI LRESULT CALLBACK DarkHookProc(INT code, WPARAM wParam, LPARAM lParam)
             case WM_ERASEBKGND:
                 if (g_isDarkModeSupported && GetAncestor(msg->hwnd, GA_ROOT) == msg->hwnd)
                 {
-                    dbgLog(L"WM_ERASEBKGND");
                     BOOL dark = FALSE; 
                     if (_IsDarkModeAllowedForWindow(msg->hwnd) && _ShouldAppsUseDarkMode())
                     {   

@@ -45,7 +45,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HOOKPROC DarkHookProc = (HOOKPROC)GetProcAddress(hinstDLL, "DarkHookProc");
     HOOKPROC DarkHookProcRet = (HOOKPROC)GetProcAddress(hinstDLL, "DarkHookProcRet");
     HHOOK hook = SetWindowsHookEx(WH_CALLWNDPROC, DarkHookProc, hinstDLL, 0); //global hook
-    //HHOOK hookRet = SetWindowsHookEx(WH_CALLWNDPROCRET, DarkHookProcRet, hinstDLL, 0); //global hook
+    ////HHOOK hookRet = SetWindowsHookEx(WH_CALLWNDPROCRET, DarkHookProcRet, hinstDLL, 0); //global hook
 
     //HHOOK hook = SetWindowsHookEx(WH_CALLWNDPROC, DarkHookProc, hInstance, GetCurrentThreadId()); //local hook
     ////HHOOK hookRet = SetWindowsHookEx(WH_CALLWNDPROCRET, DarkHookProcRet, hInstance, GetCurrentThreadId()); //local hook
@@ -155,6 +155,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
+    case WM_CREATE:
+    {
+        HWND btn = CreateWindow(L"Button", L"My button", WS_CHILD | WS_TABSTOP | WS_VISIBLE, 11, 11, 111, 55, hWnd, (HMENU)13, hInst, 0);
+    }
+        break;
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
