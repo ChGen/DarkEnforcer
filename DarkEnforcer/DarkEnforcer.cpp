@@ -1,10 +1,6 @@
-// DarkEnforcer.cpp : Defines the entry point for the application.
-//
-
 #include "framework.h"
 #include "DarkEnforcer.h"
 #include <commctrl.h>
-//#include "darkdll.h"
 
 #pragma comment(lib, "Comctl32.lib")
 #pragma comment(linker,"/manifestdependency:\"" \
@@ -39,31 +35,29 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     INITCOMMONCONTROLSEX InitCtrls;
     InitCtrls.dwSize = sizeof(InitCtrls);
     InitCtrls.dwICC = ICC_WIN95_CLASSES;
-    InitCommonControlsEx(&InitCtrls);
 
     HINSTANCE hinstDLL = LoadLibrary(_T("DarkDll.dll"));
     HOOKPROC DarkHookProc = (HOOKPROC)GetProcAddress(hinstDLL, "DarkHookProc");
     HOOKPROC DarkHookProcRet = (HOOKPROC)GetProcAddress(hinstDLL, "DarkHookProcRet");
-    HHOOK hook = SetWindowsHookEx(WH_CALLWNDPROC, DarkHookProc, hinstDLL, 0); //global hook
-    ////HHOOK hookRet = SetWindowsHookEx(WH_CALLWNDPROCRET, DarkHookProcRet, hinstDLL, 0); //global hook
+    HHOOK hook = SetWindowsHookEx(WH_CALLWNDPROC, DarkHookProc, hinstDLL, 0);
+    HHOOK hookRet = SetWindowsHookEx(WH_CALLWNDPROCRET, DarkHookProcRet, hinstDLL, 0);
 
-    //HHOOK hook = SetWindowsHookEx(WH_CALLWNDPROC, DarkHookProc, hInstance, GetCurrentThreadId()); //local hook
-    ////HHOOK hookRet = SetWindowsHookEx(WH_CALLWNDPROCRET, DarkHookProcRet, hInstance, GetCurrentThreadId()); //local hook
-
-
-    // TODO: Place code here.
+    //local hooks
+    //HHOOK hook = SetWindowsHookEx(WH_CALLWNDPROC, DarkHookProc, hInstance, GetCurrentThreadId());
+    ////HHOOK hookRet = SetWindowsHookEx(WH_CALLWNDPROCRET, DarkHookProcRet, hInstance, GetCurrentThreadId());
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_DARKENFORCER, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
+    nCmdShow = SW_MINIMIZE;
+
     // Perform application initialization:
     if (!InitInstance (hInstance, nCmdShow))
     {
         return FALSE;
     }
-
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_DARKENFORCER));
 
@@ -79,7 +73,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
     }
 
-    //UnhookWindowsHookEx(hookRet);
+    UnhookWindowsHookEx(hookRet);
     UnhookWindowsHookEx(hook);
 
     return (int) msg.wParam;
@@ -208,19 +202,19 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_CTLCOLOREDIT:
     case WM_CTLCOLORMSGBOX:
     case WM_CTLCOLORSTATIC:
-    {
+    {/*
         {
             COLORREF darkTextColor = RGB(0, 255, 255);
             COLORREF darkBkColor = RGB(255, 1, 1);
-    //        HDC hdc = reinterpret_cast<HDC>(wParam);
-    //        SetTextColor(hdc, darkTextColor);
-    //        SetBkColor(hdc, darkBkColor);
-    //        static HBRUSH hbrBkgnd = 0;
-    //        if (!hbrBkgnd)
-    //            hbrBkgnd = (HBRUSH)GetStockObject(BLACK_BRUSH); //hbrBkgnd = CreateSolidBrush(darkBkColor);
-    //        //UpdateWindow(msg->hwnd);
-    //        return reinterpret_cast<INT_PTR>(hbrBkgnd);
-        }
+            HDC hdc = reinterpret_cast<HDC>(wParam);
+            SetTextColor(hdc, darkTextColor);
+            SetBkColor(hdc, darkBkColor);
+            static HBRUSH hbrBkgnd = 0;
+            if (!hbrBkgnd)
+                hbrBkgnd = (HBRUSH)GetStockObject(BLACK_BRUSH); //hbrBkgnd = CreateSolidBrush(darkBkColor);
+            //UpdateWindow(msg->hwnd);
+            return reinterpret_cast<INT_PTR>(hbrBkgnd);
+        }*/
     }
     break;
     case WM_COMMAND:
