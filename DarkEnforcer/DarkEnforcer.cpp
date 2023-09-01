@@ -11,6 +11,79 @@
     "publicKeyToken='6595b64144ccf1df' " \
     "language='*'\"")
 
+
+
+
+
+enum IMMERSIVE_HC_CACHE_MODE
+{
+    IHCM_USE_CACHED_VALUE,
+    IHCM_REFRESH
+};
+
+// 1903 18362
+enum PreferredAppMode
+{
+    Default,
+    AllowDark,
+    ForceDark,
+    ForceLight,
+    Max
+};
+
+enum WINDOWCOMPOSITIONATTRIB
+{
+    WCA_UNDEFINED = 0,
+    WCA_NCRENDERING_ENABLED = 1,
+    WCA_NCRENDERING_POLICY = 2,
+    WCA_TRANSITIONS_FORCEDISABLED = 3,
+    WCA_ALLOW_NCPAINT = 4,
+    WCA_CAPTION_BUTTON_BOUNDS = 5,
+    WCA_NONCLIENT_RTL_LAYOUT = 6,
+    WCA_FORCE_ICONIC_REPRESENTATION = 7,
+    WCA_EXTENDED_FRAME_BOUNDS = 8,
+    WCA_HAS_ICONIC_BITMAP = 9,
+    WCA_THEME_ATTRIBUTES = 10,
+    WCA_NCRENDERING_EXILED = 11,
+    WCA_NCADORNMENTINFO = 12,
+    WCA_EXCLUDED_FROM_LIVEPREVIEW = 13,
+    WCA_VIDEO_OVERLAY_ACTIVE = 14,
+    WCA_FORCE_ACTIVEWINDOW_APPEARANCE = 15,
+    WCA_DISALLOW_PEEK = 16,
+    WCA_CLOAK = 17,
+    WCA_CLOAKED = 18,
+    WCA_ACCENT_POLICY = 19,
+    WCA_FREEZE_REPRESENTATION = 20,
+    WCA_EVER_UNCLOAKED = 21,
+    WCA_VISUAL_OWNER = 22,
+    WCA_HOLOGRAPHIC = 23,
+    WCA_EXCLUDED_FROM_DDA = 24,
+    WCA_PASSIVEUPDATEMODE = 25,
+    WCA_USEDARKMODECOLORS = 26,
+    WCA_LAST = 27
+};
+
+struct WINDOWCOMPOSITIONATTRIBDATA
+{
+    WINDOWCOMPOSITIONATTRIB Attrib;
+    PVOID pvData;
+    SIZE_T cbData;
+};
+
+using fnAllowDarkModeForWindow = bool (WINAPI*)(HWND hWnd, bool allow); // ordinal 133
+using fnSetWindowCompositionAttribute = BOOL(WINAPI*)(HWND hWnd, WINDOWCOMPOSITIONATTRIBDATA*);
+
+
+fnAllowDarkModeForWindow _AllowDarkModeForWindow = nullptr;
+fnSetWindowCompositionAttribute _SetWindowCompositionAttribute = nullptr;
+
+
+
+
+
+
+
+
 #define MAX_LOADSTRING 100
 
 // Global Variables:
@@ -36,11 +109,32 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     InitCtrls.dwSize = sizeof(InitCtrls);
     InitCtrls.dwICC = ICC_WIN95_CLASSES;
 
+
+
     HINSTANCE hinstDLL = LoadLibrary(_T("DarkDll.dll"));
     HOOKPROC DarkHookProc = (HOOKPROC)GetProcAddress(hinstDLL, "DarkHookProc");
     HOOKPROC DarkHookProcRet = (HOOKPROC)GetProcAddress(hinstDLL, "DarkHookProcRet");
     HHOOK hook = SetWindowsHookEx(WH_CALLWNDPROC, DarkHookProc, hinstDLL, 0);
     HHOOK hookRet = SetWindowsHookEx(WH_CALLWNDPROCRET, DarkHookProcRet, hinstDLL, 0);
+
+    _SetWindowCompositionAttribute = reinterpret_cast<fnSetWindowCompositionAttribute>(GetProcAddress(GetModuleHandleW(L"user32.dll"), "SetWindowCompositionAttribute"));
+
+    BOOL dark = TRUE;
+    WINDOWCOMPOSITIONATTRIBDATA data = { WCA_USEDARKMODECOLORS, &dark, sizeof(dark) };
+    SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS);
+    WNDENUMPROC proc = [](HWND hWnd, LPARAM lParam)
+    {
+        _SetWindowCompositionAttribute(hWnd, (WINDOWCOMPOSITIONATTRIBDATA*)lParam);
+        return TRUE;
+    };
+    while (true)
+    {
+        EnumWindows(proc, (LPARAM)&data);
+        Sleep(33);
+    }
+    return 1;
+
+
 
     //local hooks
     //HHOOK hook = SetWindowsHookEx(WH_CALLWNDPROC, DarkHookProc, hInstance, GetCurrentThreadId());
